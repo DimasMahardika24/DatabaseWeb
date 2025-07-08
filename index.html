@@ -82,7 +82,7 @@
 
   <script>
     const API_URL = "https://api.github.com/repos/DimasMahardika24/DbUsers/contents/Db.json";
-    const TOKEN = "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";
+   const TOKEN = process.env.GITHUB_TOKEN;
     let database = [];
     
 

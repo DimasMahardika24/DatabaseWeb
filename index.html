@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lynxxx DB Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h2 { margin-bottom: 10px; }
+    button { padding: 8px 12px; margin: 5px; }
+    input { padding: 7px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    table { border-collapse: collapse; margin-top: 20px; width: 100%; }
+    th, td { border: 1px solid #aaa; padding: 8px; text-align: left; }
+    #modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center;
+      z-index: 999;
+    }
+    #modalContent {
+      background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px;
+    }
+    #loginBox {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center;
+      z-index: 1000;
+    }
+    #loginContent {
+      background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 350px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loginBox">
+    <div id="loginContent">
+      <h3>🔐 Login Lynxxx Manager</h3>
+      <input id="passwordInput" type="password" placeholder="Masukkan Password">
+      <button onclick="login()">Login</button>
+    </div>
+  </div>
+
+  <h2>📦 Lynxxx Botz | Manajemen Database</h2>
+
+  <button onclick="openModal('add')">➕ Tambah / Edit</button>
+  <button onclick="openModal('delete')">🗑️ Hapus</button>
+
+  <h3>📄 List Database</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Nomor</th>
+        <th>Username</th>
+        <th>PIN</th>
+      </tr>
+    </thead>
+    <tbody id="dbList">
+      <tr><td colspan="3">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Modal -->
+  <div id="modal">
+    <div id="modalContent">
+      <h3 id="modalTitle">Form</h3>
+
+      <div id="formAdd" style="display:none;">
+        <input id="addPhone" placeholder="628xxxxxxxxxx">
+        <input id="addUser" placeholder="Username">
+        <input id="addPin" placeholder="PIN">
+        <button onclick="addOrEdit()">Simpan</button>
+      </div>
+
+      <div id="formDelete" style="display:none;">
+        <input id="delPhone" placeholder="628xxxxxxxxxx">
+        <button onclick="hapus()">Hapus</button>
+      </div>
+
+      <br>
+      <button onclick="closeModal()">Tutup</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://api.github.com/repos/DimasMahardika24/DbUsers/contents/Db.json";
+    const TOKEN = "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";
+    let database = [];
+
+    function login() {
+      const pass = document.getElementById("passwordInput").value.trim();
+      if (pass === "DhikzxDeveloper") {
+        localStorage.setItem("lynxxxLogin", "true");
+        document.getElementById("loginBox").style.display = "none";
+        loadDb();
+      } else {
+        alert("❌ Password salah!");
+      }
+    }
+
+    if (localStorage.getItem("lynxxxLogin") !== "true") {
+      document.getElementById("loginBox").style.display = "flex";
+    } else {
+      document.getElementById("loginBox").style.display = "none";
+      loadDb();
+    }
+
+    async function fetchDb() {
+      const res = await fetch(API_URL, {
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          Accept: "application/vnd.github.v3.raw"
+        }
+      });
+      return await res.json();
+    }
+
+    async function getSha() {
+      const res = await fetch(API_URL, {
+        headers: { Authorization: `token ${TOKEN}` }
+      });
+      const data = await res.json();
+      return data.sha;
+    }
+
+    async function pushDb(data, message) {
+      const sha = await getSha();
+      const encoded = btoa(JSON.stringify(data, null, 2));
+      await fetch(API_URL, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message,
+          committer: { name: "Lynxxx Botz", email: "lynxxx@example.com" },
+          content: encoded,
+          sha
+        })
+      });
+    }
+
+    async function loadDb() {
+      const data = await fetchDb();
+      database = data.users || [];
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("dbList");
+      if (database.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='3'>Tidak ada data.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = database.map(u => `
+        <tr>
+          <td>${u.phone}</td>
+          <td>${u.username}</td>
+          <td>${u.pin}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function addOrEdit() {
+      const phone = document.getElementById("addPhone").value.trim();
+      const username = document.getElementById("addUser").value.trim();
+      const pin = document.getElementById("addPin").value.trim();
+
+      if (!/^628\d{6,15}$/.test(phone)) return alert("❌ Nomor tidak valid!");
+      if (!username || !pin) return alert("❌ Lengkapi semua kolom!");
+
+      const existing = database.find(u => u.phone === phone);
+      if (existing) {
+        existing.username = username;
+        existing.pin = pin;
+        alert(`✏️ Data ${phone} diupdate.`);
+      } else {
+        database.push({ phone, username, pin });
+        alert(`✅ Data ${phone} ditambahkan.`);
+      }
+
+      await pushDb({ users: database }, `Add/Edit ${phone}`);
+      closeModal();
+      loadDb();
+    }
+
+    async function hapus() {
+      const phone = document.getElementById("delPhone").value.trim();
+      if (!/^628\d{6,15}$/.test(phone)) return alert("❌ Nomor tidak valid!");
+
+      const awal = database.length;
+      database = database.filter(u => u.phone !== phone);
+
+      if (awal === database.length) {
+        alert("❌ Nomor tidak ditemukan.");
+        return;
+      }
+
+      await pushDb({ users: database }, `Hapus ${phone}`);
+      alert(`🗑️ Nomor ${phone} berhasil dihapus.`);
+      closeModal();
+      loadDb();
+    }
+
+    function openModal(type) {
+      document.getElementById('modal').style.display = 'flex';
+      document.getElementById('formAdd').style.display = 'none';
+      document.getElementById('formDelete').style.display = 'none';
+
+      if (type === 'add') {
+        document.getElementById('modalTitle').innerText = '➕ Tambah / Edit Data';
+        document.getElementById('formAdd').style.display = 'block';
+      } else {
+        document.getElementById('modalTitle').innerText = '🗑️ Hapus Data';
+        document.getElementById('formDelete').style.display = 'block';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+  </script>
+</body>
+  </html>

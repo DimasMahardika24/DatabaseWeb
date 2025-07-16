@@ -1,60 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Lynxxx DB Manager</title>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lynxxx DB Manager</title>
   <style>
+    :root {
+      --lynxxx: #3b82f6;
+      --bg: #f3f4f6;
+      --white: #ffffff;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: #111;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      background: var(--white);
+      padding: 15px 20px;
+      box-shadow: 0 2px 10px var(--shadow);
+    }
+
+    header img {
+      height: 35px;
+      margin-right: 15px;
+      border-radius: 5px;
+    }
+
+    header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--lynxxx);
+    }
+
+    main {
       padding: 20px;
-      background: url('https://img1.pixhost.to/images/7258/622676494_dhikzxcloud.jpg') center/cover no-repeat fixed;
-      backdrop-filter: blur(3px);
+      max-width: 800px;
+      margin: auto;
     }
-    h2 { margin-bottom: 10px; color: white; text-shadow: 1px 1px 3px black; }
+
     button {
-      padding: 8px 12px;
-      margin: 5px;
-      border-radius: 5px;
-      border: none;
-      cursor: pointer;
-      background: #2196f3;
+      background: var(--lynxxx);
       color: white;
+      border: none;
+      padding: 10px 16px;
+      margin: 6px 6px 12px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
     }
+
+    button:hover {
+      background: #2563eb;
+    }
+
     input {
-      padding: 7px;
-      margin: 5px 0;
+      padding: 10px;
       width: 100%;
-      box-sizing: border-box;
-      border-radius: 5px;
+      margin: 6px 0;
       border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
     }
+
     table {
-      border-collapse: collapse;
-      margin-top: 20px;
       width: 100%;
+      border-collapse: collapse;
       background: white;
-      border-radius: 8px;
+      border-radius: 10px;
       overflow: hidden;
+      box-shadow: 0 5px 15px var(--shadow);
     }
-    th, td { border: 1px solid #aaa; padding: 8px; text-align: left; }
+
+    th {
+      background: var(--lynxxx);
+      color: white;
+      padding: 12px;
+      text-align: left;
+    }
+
+    td {
+      padding: 12px;
+      border-top: 1px solid #eee;
+    }
+
     #modal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center;
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
       z-index: 999;
     }
+
     #modalContent {
-      background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px var(--shadow);
     }
+
     #loginBox {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      backdrop-filter: blur(10px);
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      backdrop-filter: blur(8px);
       background: rgba(0, 0, 0, 0.6);
-      display: flex; justify-content: center; align-items: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       z-index: 1000;
     }
+
     #loginContent {
-      background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 350px;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 350px;
       text-align: center;
+      box-shadow: 0 10px 25px var(--shadow);
+    }
+
+    @media screen and (max-width: 500px) {
+      main { padding: 10px; }
+      button { width: 100%; }
     }
   </style>
 </head>
@@ -68,24 +148,29 @@
     </div>
   </div>
 
-  <h2>📦 Lynxxx Botz | Manajemen Database</h2>
+  <header>
+    <img src="https://img1.pixhost.to/images/7258/622676494_dhikzxcloud.jpg" alt="Logo" />
+    <h2>Lynxxx DB Manager</h2>
+  </header>
 
-  <button onclick="openModal('add')">➕ Tambah / Edit</button>
-  <button onclick="openModal('delete')">🗑️ Hapus</button>
+  <main>
+    <button onclick="openModal('add')">➕ Tambah / Edit</button>
+    <button onclick="openModal('delete')">🗑️ Hapus</button>
 
-  <h3 style="color:white;text-shadow:1px 1px 2px black;">📄 List Database</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Nomor</th>
-        <th>Username</th>
-        <th>PIN</th>
-      </tr>
-    </thead>
-    <tbody id="dbList">
-      <tr><td colspan="3">Loading...</td></tr>
-    </tbody>
-  </table>
+    <h3>📄 List Database</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nomor</th>
+          <th>Username</th>
+          <th>PIN</th>
+        </tr>
+      </thead>
+      <tbody id="dbList">
+        <tr><td colspan="3">Loading...</td></tr>
+      </tbody>
+    </table>
+  </main>
 
   <!-- Modal -->
   <div id="modal">
@@ -110,9 +195,8 @@
   </div>
 
   <script>
-    const API_URL = "/api/update-db";
+    const API_URL = "/api/update-db"; // Gunakan route backend
     let database = [];
-    let currentSha = '';
 
     function login() {
       const pass = document.getElementById("passwordInput").value.trim();
@@ -133,24 +217,49 @@
     }
 
     async function fetchDb() {
-      const res = await fetch(API_URL);
+      try {
+        const res = await fetch(API_URL, {
+          headers: {
+            Authorization: `Bearer ${TOKEN}`,
+            Accept: "application/vnd.github.v3.raw"
+          }
+        });
+        return await res.json();
+      } catch (err) {
+        alert("❌ Gagal mengambil database!");
+        return { users: [] };
+      }
+    }
+
+    async function getSha() {
+      const res = await fetch(API_URL, {
+        headers: { Authorization: `token ${TOKEN}` }
+      });
       const data = await res.json();
-      currentSha = data.sha || '';
-      return data;
+      return data.sha;
     }
 
     async function pushDb(data, message) {
+      const sha = await getSha();
       const encoded = btoa(JSON.stringify(data, null, 2));
       const res = await fetch(API_URL, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, content: encoded, sha: currentSha })
+        headers: {
+          Authorization: `token ${TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message,
+          committer: { name: "Lynxxx Botz", email: "lynxxx@example.com" },
+          content: encoded,
+          sha
+        })
       });
-      const result = await res.json();
-      if (!res.ok) {
-        alert("❌ Gagal update GitHub!
 
-" + JSON.stringify(result, null, 2));
+      if (!res.ok) {
+        const err = await res.text();
+        alert("❌ Gagal update GitHub!\n" + err);
+        throw new Error(err);
       }
     }
 
@@ -162,10 +271,11 @@
 
     function renderTable() {
       const tbody = document.getElementById("dbList");
-      if (database.length === 0) {
+      if (!database.length) {
         tbody.innerHTML = "<tr><td colspan='3'>Tidak ada data.</td></tr>";
         return;
       }
+
       tbody.innerHTML = database.map(u => `
         <tr>
           <td>${u.phone}</td>

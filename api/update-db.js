@@ -1,23 +1,42 @@
 export default async function handler(req, res) {
-  const { GITHUB_TOKEN } = process.env;
-  const API_URL = 'https://api.github.com/repos/DimasMahardika24/DbUsers/contents/Db.json';
+  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+  const GITHUB_REPO = 'DimasMahardika24/database-lynxxx';
+  const GITHUB_FILE = 'db.json';
+  const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
 
-  if (!GITHUB_TOKEN) {
-    return res.status(401).json({ message: 'GITHUB_TOKEN not set in environment variables' });
+  if (req.method === 'GET') {
+    try {
+      const raw = await fetch(API_URL, {
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github.v3.raw'
+        }
+      });
+
+      const meta = await fetch(API_URL, {
+        headers: { Authorization: `Bearer ${GITHUB_TOKEN}` }
+      });
+
+      const metaJson = await meta.json();
+      const data = await raw.json();
+
+      res.status(200).json({ ...data, sha: metaJson.sha });
+    } catch (err) {
+      res.status(500).json({ error: 'Gagal ambil data', detail: err.message });
+    }
   }
 
   if (req.method === 'PUT') {
-    const { content, sha, message } = req.body;
-
-    if (!content || !sha || !message) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-
     try {
-      const response = await fetch(API_URL, {
+      const { content, message, sha } = req.body;
+      if (!content || !message || !sha) {
+        return res.status(400).json({ error: 'Data tidak lengkap' });
+      }
+
+      const update = await fetch(API_URL, {
         method: 'PUT',
         headers: {
-          Authorization: `token ${GITHUB_TOKEN}`,
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -31,32 +50,12 @@ export default async function handler(req, res) {
         })
       });
 
-      const result = await response.json();
-      return res.status(response.status).json(result);
+      const result = await update.json();
+      if (!update.ok) return res.status(update.status).json(result);
+
+      res.status(200).json({ success: true, result });
     } catch (err) {
-      return res.status(500).json({ message: 'Error updating file', error: err.message });
+      res.status(500).json({ error: 'Gagal update GitHub', detail: err.message });
     }
   }
-
-  if (req.method === 'GET') {
-    try {
-      const response = await fetch(API_URL, {
-        headers: {
-          Authorization: `token ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3.raw'
-        }
-      });
-
-      if (!response.ok) {
-        return res.status(response.status).json({ message: 'Failed to fetch Db.json' });
-      }
-
-      const data = await response.json();
-      return res.status(200).json(data);
-    } catch (err) {
-      return res.status(500).json({ message: 'Error fetching file', error: err.message });
-    }
-  }
-
-  return res.status(405).json({ message: 'Method not allowed' });
-    }
+}

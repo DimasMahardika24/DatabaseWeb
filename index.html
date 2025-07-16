@@ -11,7 +11,15 @@
       backdrop-filter: blur(3px);
     }
     h2 { margin-bottom: 10px; color: white; text-shadow: 1px 1px 3px black; }
-    button { padding: 8px 12px; margin: 5px; border-radius: 5px; cursor: pointer; }
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      background: #2196f3;
+      color: white;
+    }
     input {
       padding: 7px;
       margin: 5px 0;
@@ -102,8 +110,9 @@
   </div>
 
   <script>
-    const API_URL = "/api/update-db"; // <-- backend proxy aman
+    const API_URL = "/api/update-db";
     let database = [];
+    let currentSha = '';
 
     function login() {
       const pass = document.getElementById("passwordInput").value.trim();
@@ -123,31 +132,26 @@
       loadDb();
     }
 
-    async function getSha() {
+    async function fetchDb() {
       const res = await fetch(API_URL);
       const data = await res.json();
-      return data.sha;
+      currentSha = data.sha || '';
+      return data;
     }
 
     async function pushDb(data, message) {
-      const sha = await getSha();
       const encoded = btoa(JSON.stringify(data, null, 2));
-
       const res = await fetch(API_URL, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, content: encoded, sha })
+        body: JSON.stringify({ message, content: encoded, sha: currentSha })
       });
-
       const result = await res.json();
-      if (!res.ok) throw new Error(result.message);
-    }
+      if (!res.ok) {
+        alert("❌ Gagal update GitHub!
 
-    async function fetchDb() {
-      const res = await fetch(API_URL, {
-        headers: { Accept: "application/vnd.github.v3.raw" }
-      });
-      return await res.json();
+" + JSON.stringify(result, null, 2));
+      }
     }
 
     async function loadDb() {
@@ -162,7 +166,6 @@
         tbody.innerHTML = "<tr><td colspan='3'>Tidak ada data.</td></tr>";
         return;
       }
-
       tbody.innerHTML = database.map(u => `
         <tr>
           <td>${u.phone}</td>

@@ -11,14 +11,12 @@
       --white: #ffffff;
       --shadow: rgba(0, 0, 0, 0.1);
     }
-
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
       color: #111;
     }
-
     header {
       display: flex;
       align-items: center;
@@ -26,25 +24,21 @@
       padding: 15px 20px;
       box-shadow: 0 2px 10px var(--shadow);
     }
-
     header img {
       height: 35px;
       margin-right: 15px;
       border-radius: 5px;
     }
-
     header h2 {
       margin: 0;
       font-size: 20px;
       color: var(--lynxxx);
     }
-
     main {
       padding: 20px;
       max-width: 800px;
       margin: auto;
     }
-
     button {
       background: var(--lynxxx);
       color: white;
@@ -55,11 +49,9 @@
       cursor: pointer;
       transition: background 0.3s;
     }
-
     button:hover {
       background: #2563eb;
     }
-
     input {
       padding: 10px;
       width: 100%;
@@ -68,7 +60,6 @@
       border-radius: 6px;
       box-sizing: border-box;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -77,19 +68,16 @@
       overflow: hidden;
       box-shadow: 0 5px 15px var(--shadow);
     }
-
     th {
       background: var(--lynxxx);
       color: white;
       padding: 12px;
       text-align: left;
     }
-
     td {
       padding: 12px;
       border-top: 1px solid #eee;
     }
-
     #modal {
       display: none;
       position: fixed;
@@ -100,7 +88,6 @@
       align-items: center;
       z-index: 999;
     }
-
     #modalContent {
       background: white;
       padding: 20px;
@@ -109,7 +96,6 @@
       max-width: 400px;
       box-shadow: 0 10px 25px var(--shadow);
     }
-
     #loginBox {
       position: fixed;
       top: 0; left: 0;
@@ -121,7 +107,6 @@
       align-items: center;
       z-index: 1000;
     }
-
     #loginContent {
       background: white;
       padding: 30px;
@@ -131,15 +116,34 @@
       text-align: center;
       box-shadow: 0 10px 25px var(--shadow);
     }
-
-    @media screen and (max-width: 500px) {
-      main { padding: 10px; }
-      button { width: 100%; }
+    #notif {
+      position: fixed;
+      bottom: 30px;
+      right: -400px;
+      background-color: #4ade80;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      font-weight: 500;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.4s ease;
+      pointer-events: none;
+    }
+    #notif.show {
+      right: 30px;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #notif.error {
+      background-color: #f87171;
     }
   </style>
 </head>
 <body>
 
+  <!-- Login -->
   <div id="loginBox">
     <div id="loginContent">
       <h3>🔐 Login Lynxxx Manager</h3>
@@ -158,6 +162,8 @@
     <button onclick="openModal('delete')">🗑️ Hapus</button>
 
     <h3>📄 List Database</h3>
+    <input type="text" id="searchInput" placeholder="🔍 Cari nomor..." oninput="filterDb()" inputmode="numeric" pattern="\d*" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+
     <table>
       <thead>
         <tr>
@@ -194,71 +200,41 @@
     </div>
   </div>
 
+  <!-- 🔔 Notifikasi -->
+  <div id="notif"></div>
+
+  <!-- SCRIPT: Connect ke Backend -->
   <script>
-    const API_URL = "/api/update-db"; // Gunakan route backend
+    const API_URL = "https://lynxxx-api.onrender.com"; // Ganti dengan link render kamu
     let database = [];
 
-    function login() {
-      const pass = document.getElementById("passwordInput").value.trim();
-      if (pass === "DhikzxDeveloper") {
-        localStorage.setItem("lynxxxLogin", "true");
-        document.getElementById("loginBox").style.display = "none";
-        loadDb();
-      } else {
-        alert("❌ Password salah!");
-      }
-    }
-
-    if (localStorage.getItem("lynxxxLogin") !== "true") {
-      document.getElementById("loginBox").style.display = "flex";
-    } else {
-      document.getElementById("loginBox").style.display = "none";
-      loadDb();
+    function showNotif(msg, isError = false) {
+      const notif = document.getElementById('notif');
+      notif.textContent = msg;
+      notif.classList.toggle('error', isError);
+      notif.classList.add('show');
+      setTimeout(() => notif.classList.remove('show', 'error'), 3000);
     }
 
     async function fetchDb() {
       try {
-        const res = await fetch(API_URL, {
-          headers: {
-            Authorization: `Bearer ${TOKEN}`,
-            Accept: "application/vnd.github.v3.raw"
-          }
-        });
+        const res = await fetch(`${API_URL}/db`);
         return await res.json();
       } catch (err) {
-        alert("❌ Gagal mengambil database!");
+        showNotif("❌ Gagal mengambil database!", true);
         return { users: [] };
       }
     }
 
-    async function getSha() {
-      const res = await fetch(API_URL, {
-        headers: { Authorization: `token ${TOKEN}` }
-      });
-      const data = await res.json();
-      return data.sha;
-    }
-
     async function pushDb(data, message) {
-      const sha = await getSha();
-      const encoded = btoa(JSON.stringify(data, null, 2));
-      const res = await fetch(API_URL, {
-        method: "PUT",
-        headers: {
-          Authorization: `token ${TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message,
-          committer: { name: "Lynxxx Botz", email: "lynxxx@example.com" },
-          content: encoded,
-          sha
-        })
+      const res = await fetch(`${API_URL}/db/push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, message })
       });
-
       if (!res.ok) {
         const err = await res.text();
-        alert("❌ Gagal update GitHub!\n" + err);
+        showNotif("❌ Gagal update database!\n" + err, true);
         throw new Error(err);
       }
     }
@@ -266,6 +242,7 @@
     async function loadDb() {
       const data = await fetchDb();
       database = data.users || [];
+      document.getElementById("searchInput").value = "";
       renderTable();
     }
 
@@ -275,8 +252,24 @@
         tbody.innerHTML = "<tr><td colspan='3'>Tidak ada data.</td></tr>";
         return;
       }
-
       tbody.innerHTML = database.map(u => `
+        <tr>
+          <td>${u.phone}</td>
+          <td>${u.username}</td>
+          <td>${u.pin}</td>
+        </tr>
+      `).join("");
+    }
+
+    function filterDb() {
+      const query = document.getElementById("searchInput").value.trim();
+      const tbody = document.getElementById("dbList");
+      const filtered = database.filter(u => u.phone.includes(query));
+      if (!filtered.length) {
+        tbody.innerHTML = "<tr><td colspan='3'>Tidak ditemukan.</td></tr>";
+        return;
+      }
+      tbody.innerHTML = filtered.map(u => `
         <tr>
           <td>${u.phone}</td>
           <td>${u.username}</td>
@@ -289,18 +282,17 @@
       const phone = document.getElementById("addPhone").value.trim();
       const username = document.getElementById("addUser").value.trim();
       const pin = document.getElementById("addPin").value.trim();
-
-      if (!/^628\d{6,15}$/.test(phone)) return alert("❌ Nomor tidak valid!");
-      if (!username || !pin) return alert("❌ Lengkapi semua kolom!");
+      if (!/^628\d{6,15}$/.test(phone)) return showNotif("❌ Nomor tidak valid!", true);
+      if (!username || !pin) return showNotif("❌ Lengkapi semua kolom!", true);
 
       const existing = database.find(u => u.phone === phone);
       if (existing) {
         existing.username = username;
         existing.pin = pin;
-        alert(`✏️ Data ${phone} diupdate.`);
+        showNotif(`✏️ Data ${phone} diupdate.`);
       } else {
         database.push({ phone, username, pin });
-        alert(`✅ Data ${phone} ditambahkan.`);
+        showNotif(`✅ Data ${phone} ditambahkan.`);
       }
 
       await pushDb({ users: database }, `Add/Edit ${phone}`);
@@ -310,18 +302,14 @@
 
     async function hapus() {
       const phone = document.getElementById("delPhone").value.trim();
-      if (!/^628\d{6,15}$/.test(phone)) return alert("❌ Nomor tidak valid!");
+      if (!/^628\d{6,15}$/.test(phone)) return showNotif("❌ Nomor tidak valid!", true);
 
       const awal = database.length;
       database = database.filter(u => u.phone !== phone);
-
-      if (awal === database.length) {
-        alert("❌ Nomor tidak ditemukan.");
-        return;
-      }
+      if (awal === database.length) return showNotif("❌ Nomor tidak ditemukan.", true);
 
       await pushDb({ users: database }, `Hapus ${phone}`);
-      alert(`🗑️ Nomor ${phone} berhasil dihapus.`);
+      showNotif(`🗑️ Nomor ${phone} berhasil dihapus.`);
       closeModal();
       loadDb();
     }
@@ -330,18 +318,30 @@
       document.getElementById('modal').style.display = 'flex';
       document.getElementById('formAdd').style.display = 'none';
       document.getElementById('formDelete').style.display = 'none';
-
-      if (type === 'add') {
-        document.getElementById('modalTitle').innerText = '➕ Tambah / Edit Data';
-        document.getElementById('formAdd').style.display = 'block';
-      } else {
-        document.getElementById('modalTitle').innerText = '🗑️ Hapus Data';
-        document.getElementById('formDelete').style.display = 'block';
-      }
+      document.getElementById('modalTitle').innerText = type === 'add' ? '➕ Tambah / Edit Data' : '🗑️ Hapus Data';
+      document.getElementById(type === 'add' ? 'formAdd' : 'formDelete').style.display = 'block';
     }
 
     function closeModal() {
       document.getElementById('modal').style.display = 'none';
+    }
+
+    function login() {
+      const pass = document.getElementById("passwordInput").value.trim();
+      if (pass === "DhikzxDeveloper") {
+        localStorage.setItem("lynxxxLogin", "true");
+        document.getElementById("loginBox").style.display = "none";
+        loadDb();
+      } else {
+        showNotif("❌ Password salah!", true);
+      }
+    }
+
+    if (localStorage.getItem("lynxxxLogin") !== "true") {
+      document.getElementById("loginBox").style.display = "flex";
+    } else {
+      document.getElementById("loginBox").style.display = "none";
+      loadDb();
     }
   </script>
 </body>
